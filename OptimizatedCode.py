@@ -2,6 +2,7 @@ import boto3
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import pathlib
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PolynomialFeatures
@@ -79,7 +80,7 @@ class Transform:
         df_all.dropna(inplace=True)
 
         df_all.to_csv('datos.csv')
-        print("CSV file successfully generated to the root folder")
+        print(f"CSV file successfully generated to the root folder {pathlib.Path(__file__).parent.resolve()}")
 
         #print(df_all)
 
@@ -143,6 +144,7 @@ class Load():
         except Exception as e:
             print(f"Error loading dataframe to {self.target_bucket_name}/{self.key}: {e}")
 
+
 class Report():
 
     ## Método constructor de la clase:
@@ -153,14 +155,20 @@ class Report():
         self.key = key
 
     def getReportOfBucket(self):
-        s3 = boto3.resource(self.typeService)
-        bucket_trg = s3.Bucket(self.target_bucket_name)
-        prq_obj = bucket_trg.Object(key=self.key).get().get('Body').read()
-        data = BytesIO(prq_obj)
-        df_report = pd.read_parquet(data)
 
-        print("DataFrame obtenido de Bucket:")
-        print(df_report)
+        try:
+            s3 = boto3.resource(self.typeService)
+            bucket_trg = s3.Bucket(self.target_bucket_name)
+            prq_obj = bucket_trg.Object(key=self.key).get().get('Body').read()
+            data = BytesIO(prq_obj)
+            df_report = pd.read_parquet(data)
+
+            print("DataFrame got from Bucket:")
+            return print(df_report)
+
+        except Exception as e:
+            print(f"Error, it was no possible to get the DataFrame from Bucket -> {e}")
+            return None
 
 ## Creación de objeto y llamada de métodos de la clase "Extract" y envío de parámetros:
 extract = Extract('s3', 'xetra-1234', '2022-12-31')
