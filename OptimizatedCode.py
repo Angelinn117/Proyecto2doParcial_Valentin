@@ -143,6 +143,25 @@ class Load():
         except Exception as e:
             print(f"Error loading dataframe to {self.target_bucket_name}/{self.key}: {e}")
 
+class Report():
+
+    ## Método constructor de la clase:
+
+    def __init__(self, typeService, target_bucket_name, key):
+        self.typeService = typeService
+        self.target_bucket_name = target_bucket_name
+        self.key = key
+
+    def getReportOfBucket(self):
+        s3 = boto3.resource(self.typeService)
+        bucket_trg = s3.Bucket(self.target_bucket_name)
+        prq_obj = bucket_trg.Object(key=self.key).get().get('Body').read()
+        data = BytesIO(prq_obj)
+        df_report = pd.read_parquet(data)
+
+        print("DataFrame obtenido de Bucket:")
+        print(df_report)
+
 ## Creación de objeto y llamada de métodos de la clase "Extract" y envío de parámetros:
 extract = Extract('s3', 'xetra-1234', '2022-12-31')
 
@@ -158,4 +177,9 @@ df = transform.operationDataFrame(extract.convertObjectsToDataFrame(extract.extr
 ## Llamada de método "Load" perteneciente a la capa de aplicación junto a sus respectivos parámetros:
 load = Load('s3', 'xetra-aagf', key)
 load.loadObjectToBucket(df)
+
+## Llamada de método "Report" para extraer el DataFrame subido recientemente al Bucket determinado:
+report = Report('s3', 'xetra-aagf', key)
+report.getReportOfBucket()
+
 
