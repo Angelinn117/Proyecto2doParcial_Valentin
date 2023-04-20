@@ -155,3 +155,4 @@ df = transform.operationDataFrame(extract.convertObjectsToDataFrame(extract.extr
 ## Llamada de método "Load" perteneciente a la capa de aplicación junto a sus respectivos parámetros:
 load = Load('s3', df, 'xetra-aagf', key)
 load.loadObjectToBucket()
+
