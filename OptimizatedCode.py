@@ -79,8 +79,9 @@ class Transform:
         df_all.dropna(inplace=True)
 
         df_all.to_csv('datos.csv')
+        print("CSV file successfully generated to the root folder")
 
-        print(df_all)
+        #print(df_all)
 
         # Se crea una ventana de tiempo
         start_time = '2022-12-31 08:00:00'
@@ -124,12 +125,33 @@ class Transform:
 
         return (df_all)
 
-## Llamada de métodos de la clase "Extract":
+class Load():
+
+    ## Método constructor de la clase:
+    def __init__(self, typeService, df, target_bucket_name, key):
+        self.typeService = typeService
+        self.df = df
+        self.target_bucket_name = target_bucket_name
+        self.key = key
+
+    def loadObjectToBucket(self):
+        out_buffer = BytesIO()
+        df.to_parquet(out_buffer, index=False)
+        s3 = boto3.client(self.typeService)
+        s3.put_object(Body=out_buffer.getvalue(), Bucket=self.target_bucket_name, Key=self.key)
+
+## Creación de objeto y llamada de métodos de la clase "Extract" y envío de parámetros:
 extract = Extract('s3', 'xetra-1234', '2022-12-31')
 
-## Llamada de métodos de la clase "ApplicationLayer":
+## Creación de objeto y llamada de métodos de la clase "ApplicationLayer" y envío de parámetros:
 transform = Transform(19.20)
 
-## Creación de llave para indicar el nombre que tendrá el parquet así como enviar el DataFrame a subir al Bucket.
+## Creación de llave para indicar el nombre que tendrá el parquet:
 key = 'xetra_daily_report_' + datetime.today().strftime("%Y%m%d_%H%M%S") + '.parquet'
+
+## Preparación de DataFrame a subir al Bucket.
 df = transform.operationDataFrame(extract.convertObjectsToDataFrame(extract.extractObjectsDataFromXetra()))
+
+## Llamada de método "Load" perteneciente a la capa de aplicación junto a sus respectivos parámetros:
+load = Load('s3', df, 'xetra-aagf', key)
+load.loadObjectToBucket()

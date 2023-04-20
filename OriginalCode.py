@@ -47,6 +47,9 @@ class AdapterLayer:
 
         return df_all
 
+
+
+
 ## Llamada de métodos de la clase "AdapterLayer":
 adapterLayer = AdapterLayer('s3', 'xetra-1234', '2022-12-31')
 
