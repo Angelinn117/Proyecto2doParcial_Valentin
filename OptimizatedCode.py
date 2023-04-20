@@ -128,17 +128,20 @@ class Transform:
 class Load():
 
     ## Método constructor de la clase:
-    def __init__(self, typeService, df, target_bucket_name, key):
+    def __init__(self, typeService, target_bucket_name, key):
         self.typeService = typeService
-        self.df = df
         self.target_bucket_name = target_bucket_name
         self.key = key
 
-    def loadObjectToBucket(self):
-        out_buffer = BytesIO()
-        df.to_parquet(out_buffer, index=False)
-        s3 = boto3.client(self.typeService)
-        s3.put_object(Body=out_buffer.getvalue(), Bucket=self.target_bucket_name, Key=self.key)
+    def loadObjectToBucket(self, df):
+        try:
+            out_buffer = BytesIO()
+            df.to_parquet(out_buffer, index=False)
+            s3 = boto3.client(self.typeService)
+            s3.put_object(Body=out_buffer.getvalue(), Bucket=self.target_bucket_name, Key=self.key)
+            print(f"Dataframe successfully loaded to {self.target_bucket_name}/{self.key}")
+        except Exception as e:
+            print(f"Error loading dataframe to {self.target_bucket_name}/{self.key}: {e}")
 
 ## Creación de objeto y llamada de métodos de la clase "Extract" y envío de parámetros:
 extract = Extract('s3', 'xetra-1234', '2022-12-31')
@@ -153,6 +156,6 @@ key = 'xetra_daily_report_' + datetime.today().strftime("%Y%m%d_%H%M%S") + '.par
 df = transform.operationDataFrame(extract.convertObjectsToDataFrame(extract.extractObjectsDataFromXetra()))
 
 ## Llamada de método "Load" perteneciente a la capa de aplicación junto a sus respectivos parámetros:
-load = Load('s3', df, 'xetra-aagf', key)
-load.loadObjectToBucket()
+load = Load('s3', 'xetra-aagf', key)
+load.loadObjectToBucket(df)
 
