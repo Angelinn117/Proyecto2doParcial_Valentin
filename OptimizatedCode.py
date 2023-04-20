@@ -1,32 +1,29 @@
 import math
-
 import boto3
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 import pathlib
-from sklearn.model_selection import train_test_split
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
-import tensorflow as tf
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 
 class Extract:
+
+    ## Método constructor de la clase:
     def __init__(self, typeService, xetraBucket, arg_date):
         self.typeService = boto3.resource(typeService)
         self.xetraBucket = self.typeService.Bucket(xetraBucket)
         self.arg_date = arg_date
 
+    ## Método encargado de extraer los objetos de la base de datos "Xetra":
     def extractObjectsDataFromXetra(self):
         prefix = self.arg_date + '/'
         objects = list(self.xetraBucket.objects.filter(Prefix=prefix))
         return objects
 
+    ## Método encargado de convertir los objetos en información legible para los DataFrame (y convertirlos a uno):
     def convertObjectsToDataFrame(self, objects):
         data = []
         for obj in objects:
@@ -43,6 +40,7 @@ class Transform:
     def __init__(self, valorEurToMxn):
         self.valorEurToMxn = valorEurToMxn
 
+    ## Método encargado de realizar las modificaciones solicitadas a la información extraida:
     def operationDataFrame(self, df_all):
         # Se seleccionan solo las siguientes columnas:
         columns = ["ISIN", "Mnemonic", "Date", "Time", "StartPrice", "EndPrice", "MinPrice", "MaxPrice", "TradedVolume"]
@@ -97,6 +95,7 @@ class Load():
         self.target_bucket_name = target_bucket_name
         self.key = key
 
+    ## Método encargado de recibir el DataFrame transformado y subirlo al bucket especificado:
     def loadObjectToBucket(self, df):
         try:
             out_buffer = BytesIO()
@@ -111,12 +110,12 @@ class Load():
 class Report():
 
     ## Método constructor de la clase:
-
     def __init__(self, typeService, target_bucket_name, key):
         self.typeService = typeService
         self.target_bucket_name = target_bucket_name
         self.key = key
 
+    ## Método encargado de extraer la información del Bucket en un DataFrame:
     def getReportOfBucket(self):
 
         try:
@@ -134,6 +133,8 @@ class Report():
 
 class Prediction:
 
+    ## Método encargado de realizar la predicción del EndPrice mediante redes neuronáles:
+    ## Nota: se utilizó un modelo de red neuronal LSTM.
     def predictionEndPrice(self, dataReportPath):
 
         # Carga los datos en un DataFrame de pandas
@@ -147,7 +148,6 @@ class Prediction:
 
         # Obtener el número de filas para entrenar el modelo
         training_data_len = math.ceil(len(dataset) * 0.8)
-
         # Normalizar los datos
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(dataset)
