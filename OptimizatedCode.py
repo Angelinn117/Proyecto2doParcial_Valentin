@@ -82,48 +82,6 @@ class Transform:
         df_all.to_csv('datos.csv')
         print(f"CSV file successfully generated to the root folder {pathlib.Path(__file__).parent.resolve()}")
 
-        #print(df_all)
-
-        # Se crea una ventana de tiempo
-        start_time = '2022-12-31 08:00:00'
-        end_time = '2022-12-31 12:00:00'
-        df_window = df_all.loc[start_time:end_time]
-
-        # Seleccionar las características relevantes y la variable objetivo.
-        X = df_window[
-            ['opening_price_eur', 'minimum_price_eur', 'maximum_price_eur', 'daily_traded_volume', 'StartPrice_eur']]
-        y = df_window['EndPrice_eur']
-
-        # Dividir los datos en conjuntos de entrenamiento 30% prueba y 70% entrenamiento.
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-        # Transformar las características seleccionadas a una forma polinómica
-        poly = PolynomialFeatures(degree=2, include_bias=False)
-        X_train_poly = poly.fit_transform(X_train)
-        X_test_poly = poly.transform(X_test)
-
-        # Crear un objeto de regresión lineal y ajustar el modelo con los datos de entrenamiento
-        model = LinearRegression()
-        model.fit(X_train_poly, y_train)
-
-        # Evaluar el rendimiento del modelo utilizando el conjunto de prueba
-        score = model.score(X_test_poly, y_test)
-        print(f'score: {score}')
-
-        # Utilizar el modelo para hacer predicciones para datos nuevos
-        # 'opening_price_eur', 'minimum_price_eur', 'maximum_price_eur', 'daily_traded_volume', 'StartPrice_eur'
-        new_data = np.array([[50.0, 40.0, 60.0, 10000.0, 45.0]])
-        new_data_poly = poly.transform(new_data)
-        predicted_price = model.predict(new_data_poly)
-
-        print(f'Predicted EndPrice_eur: {predicted_price[0]}')
-
-        # opening_price_eur
-        plt.scatter(X_train_poly[:, 1], y_train)
-        plt.xlabel('x1')
-        plt.ylabel('EndPrice_eur')
-        plt.show()
-
         return (df_all)
 
 class Load():
