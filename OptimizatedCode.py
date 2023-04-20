@@ -1,3 +1,5 @@
+import math
+
 import boto3
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,6 +9,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+import tensorflow as tf
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 
@@ -31,7 +37,6 @@ class Extract:
 
         return df_all
 
-## Capa de Aplicación:
 class Transform:
 
     ## Método constructor de la clase:
@@ -99,9 +104,9 @@ class Load():
             s3 = boto3.client(self.typeService)
             s3.put_object(Body=out_buffer.getvalue(), Bucket=self.target_bucket_name, Key=self.key)
             print(f"Dataframe successfully loaded to {self.target_bucket_name}/{self.key}")
+
         except Exception as e:
             print(f"Error loading dataframe to {self.target_bucket_name}/{self.key}: {e}")
-
 
 class Report():
 
@@ -121,12 +126,87 @@ class Report():
             data = BytesIO(prq_obj)
             df_report = pd.read_parquet(data)
 
-            print("DataFrame got from Bucket:")
-            return print(df_report)
+            return df_report.to_csv('dataReport.csv')
 
         except Exception as e:
             print(f"Error, it was no possible to get the DataFrame from Bucket -> {e}")
             return None
+
+class Prediction:
+
+    def predictionEndPrice(self, dataReportPath):
+
+        # Carga los datos en un DataFrame de pandas
+        df = pd.read_csv(dataReportPath)
+
+        # Seleccione solo las columnas necesarias
+        data = df.filter(['EndPrice_eur'])
+
+        # Convertir el DataFrame a un numpy array
+        dataset = data.values
+
+        # Obtener el número de filas para entrenar el modelo
+        training_data_len = math.ceil(len(dataset) * 0.8)
+
+        # Normalizar los datos
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaled_data = scaler.fit_transform(dataset)
+
+        # Crear el conjunto de datos de entrenamiento
+        train_data = scaled_data[0:training_data_len, :]
+
+        # Dividir los datos en x_train y y_train
+        x_train = []
+        y_train = []
+
+        for i in range(7, len(train_data)):
+            x_train.append(train_data[i - 7:i, 0])
+            y_train.append(train_data[i, 0])
+
+        # Convertir los datos en numpy arrays
+        x_train, y_train = np.array(x_train), np.array(y_train)
+
+        # Dar forma a los datos para que sean aptos para la red neuronal
+        x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+
+        # Construir el modelo de red neuronal
+        model = Sequential()
+        model.add(LSTM(50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+        model.add(LSTM(50, return_sequences=False))
+        model.add(Dense(25))
+        model.add(Dense(1))
+
+        # Compilar el modelo
+        model.compile(optimizer='adam', loss='mean_squared_error')
+
+        # Entrenar el modelo
+        model.fit(x_train, y_train, batch_size=1, epochs=5)
+
+        # Crear el conjunto de datos de prueba
+        test_data = scaled_data[training_data_len - 7:, :]
+
+        # Crear el conjunto de datos x_test y y_test
+        x_test = []
+        y_test = dataset[training_data_len:, :]
+
+        for i in range(7, len(test_data)):
+            x_test.append(test_data[i - 7:i, 0])
+
+        # Convertir los datos en numpy arrays
+        x_test = np.array(x_test)
+
+        # Dar forma a los datos para que sean aptos para la red neuronal
+        x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
+
+        # Realizar una predicción de los precios
+        predictions = model.predict(x_test)
+        predictions = scaler.inverse_transform(predictions)
+
+        # Obtener la raíz del error cuadrático medio (RMSE)
+        rmse = np.sqrt(np.mean(((predictions - y_test) ** 2)))
+        print('RMSE:', rmse)
+
+        return print(predictions)
 
 ## Creación de objeto y llamada de métodos de la clase "Extract" y envío de parámetros:
 extract = Extract('s3', 'xetra-1234', '2022-12-31')
@@ -147,5 +227,9 @@ load.loadObjectToBucket(df)
 ## Llamada de método "Report" para extraer el DataFrame subido recientemente al Bucket determinado:
 report = Report('s3', 'xetra-aagf', key)
 report.getReportOfBucket()
+
+## Creación de objeto y llamada de métodos de la clase "Prediction" y envío de parámetros:
+prediction = Prediction()
+prediction.predictionEndPrice('dataReport.csv')
 
 
