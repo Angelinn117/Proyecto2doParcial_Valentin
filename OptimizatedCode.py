@@ -83,7 +83,7 @@ class Transform:
         df_all.dropna(inplace=True)
 
         df_all.to_csv('datos.csv')
-        print(f"CSV file successfully generated to the root folder {pathlib.Path(__file__).parent.resolve()}")
+        print(f"CSV file successfully generated to the root folder {pathlib.Path(__file__).parent.resolve()} with name 'datos.csv'")
 
         return (df_all)
 
@@ -125,6 +125,7 @@ class Report():
             data = BytesIO(prq_obj)
             df_report = pd.read_parquet(data)
 
+            print(f"CSV file successfully generated to the root folder {pathlib.Path(__file__).parent.resolve()} with name 'dataReport.csv'")
             return df_report.to_csv('dataReport.csv')
 
         except Exception as e:
@@ -180,7 +181,7 @@ class Prediction:
         model.compile(optimizer='adam', loss='mean_squared_error')
 
         # Entrenar el modelo
-        model.fit(x_train, y_train, batch_size=1, epochs=5)
+        model.fit(x_train, y_train, batch_size=1, epochs=3)
 
         # Crear el conjunto de datos de prueba
         test_data = scaled_data[training_data_len - 7:, :]
