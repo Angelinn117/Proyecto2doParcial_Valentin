@@ -92,7 +92,6 @@ class Load():
         self.typeService = typeService
         self.target_bucket_name = target_bucket_name
         self.key = key
-
     ## Método encargado de recibir el DataFrame transformado y subirlo al bucket especificado:
     def loadObjectToBucket(self, df):
         try:
