@@ -149,7 +149,7 @@ class Prediction:
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(dataset)
 
-        # Crear el conjunto de datos de entrenamiento
+        # Crear el dataset de datos de entrenamiento
         train_data = scaled_data[0:training_data_len, :]
 
         # Dividir los datos en x_train y y_train
