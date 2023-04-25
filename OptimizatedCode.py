@@ -26,6 +26,7 @@ class Extract:
     ## Método encargado de convertir los objetos en información legible para los DataFrame (y convertirlos a uno):
     def convertObjectsToDataFrame(self, objects):
         data = []
+
         for obj in objects:
             csv_obj = self.xetraBucket.Object(key=obj.key).get()['Body'].read().decode('utf-8')
             data.append(pd.read_csv(StringIO(csv_obj), delimiter=','))
@@ -35,7 +36,6 @@ class Extract:
         return df_all
 
 class Transform:
-
     ## Método constructor de la clase:
     def __init__(self, valorEurToMxn):
         self.valorEurToMxn = valorEurToMxn
@@ -67,7 +67,6 @@ class Transform:
 
         # Se especifica el rango de horas a obtener la información, en este caso, de 8:00 AM a 12:00 PM.
         df_all = df_all.between_time('8:0:0', '12:0:0')
-
         # Se borran las columnas "Date" y "Time" debido a que ya se encuentran visibles en la columna índice "datetime":
         del df_all['Date']
         del df_all['Time']
@@ -88,7 +87,6 @@ class Transform:
         return (df_all)
 
 class Load():
-
     ## Método constructor de la clase:
     def __init__(self, typeService, target_bucket_name, key):
         self.typeService = typeService
@@ -117,7 +115,6 @@ class Report():
 
     ## Método encargado de extraer la información del Bucket en un DataFrame:
     def getReportOfBucket(self):
-
         try:
             s3 = boto3.resource(self.typeService)
             bucket_trg = s3.Bucket(self.target_bucket_name)
@@ -224,11 +221,9 @@ df = transform.operationDataFrame(extract.convertObjectsToDataFrame(extract.extr
 ## Llamada de método "Load" perteneciente a la capa de aplicación junto a sus respectivos parámetros:
 load = Load('s3', 'xetra-aagf', key)
 load.loadObjectToBucket(df)
-
 ## Llamada de método "Report" para extraer el DataFrame subido recientemente al Bucket determinado:
 report = Report('s3', 'xetra-aagf', key)
 report.getReportOfBucket()
-
 ## Creación de objeto y llamada de métodos de la clase "Prediction" y envío de parámetros:
 prediction = Prediction()
 prediction.predictionEndPrice('dataReport.csv')
